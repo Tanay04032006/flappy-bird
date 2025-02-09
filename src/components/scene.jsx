@@ -68,20 +68,22 @@ const SceneComponent = () => {
         backgroundPosition: "center",
       }}
     >
-      {/* Score Display */}
-      {gameStarted && !gameOver && (
-        <div className="absolute top-10 flex flex-col items-center bg-black/60 px-6 py-3 rounded-lg shadow-lg">
-          {/* Max Score */}
-          <div className="text-yellow-400 font-extrabold text-3xl">
-            Max Score: {maxScore}
-          </div>
+     {gameStarted && !gameOver && (
+  <div className="absolute top-[5vh] md:top-[8vh] flex flex-row md:flex-col items-center justify-center w-[90%] max-w-[350px] bg-black/70 px-4 py-3 rounded-lg shadow-lg text-center gap-4 md:gap-2">
+    {/* Max Score */}
+    <div className="text-yellow-400 font-extrabold text-base md:text-xl whitespace-nowrap">
+      Max Score: {maxScore}
+    </div>
 
-          {/* Current Score */}
-          <div className="mt-2 text-white font-bold text-2xl">
-            Score: {score}
-          </div>
-        </div>
-      )}
+    {/* Current Score */}
+    <div className="text-white font-bold text-base md:text-xl whitespace-nowrap">
+      Score: {score}
+    </div>
+  </div>
+)}
+
+
+
 
       {/* Foreground (Ground) */}
       <div
