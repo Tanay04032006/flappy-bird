@@ -5,6 +5,11 @@ export default class FlappyBirdScene extends Phaser.Scene {
     super("FlappyBirdScene");
   }
 
+  init(data) {
+    this.setGameOver = data.setGameOver || (() => {});
+    this.setScore = data.setScore || (() => {});
+  }
+
   preload() {
     this.load.image("bgDay", "/background-day.png");
     this.load.image("bgNight", "/background-night.png");
@@ -12,18 +17,19 @@ export default class FlappyBirdScene extends Phaser.Scene {
     this.load.image("bird", "/bird.png");
     this.load.image("pipeTop", "/pipe-top.png");
     this.load.image("pipeBottom", "/pipe-bottom.png");
+
+    this.load.audio("hit", "/hit.mp3");
+    this.load.audio("point", "/point.mp3");
+    this.load.audio("wing", "/wing.mp3");
   }
 
   create() {
-    // Background setup (centered)
     this.bgDay = this.add.image(144, 256, "bgDay").setOrigin(0.5);
     this.bgNight = this.add.image(144, 256, "bgNight").setOrigin(0.5).setVisible(false);
     this.isDay = true;
 
-    // Foreground (ground) setup at bottom
     this.foreground = this.add.tileSprite(144, 486, 288, 26, "foreground");
 
-    // Toggle Day/Night every 10 seconds
     this.time.addEvent({
       delay: 10000,
       callback: this.toggleDayNight,
@@ -31,16 +37,13 @@ export default class FlappyBirdScene extends Phaser.Scene {
       loop: true,
     });
 
-    // Bird setup (placed centrally)
     this.bird = this.physics.add.sprite(60, 256, "bird").setOrigin(0.5);
     this.bird.setGravityY(600);
 
     this.input.on("pointerdown", this.flap, this);
 
-    // Pipe group
     this.pipes = this.physics.add.group({ immovable: true });
 
-    // Generate pipes
     this.time.addEvent({
       delay: 1600,
       callback: this.addPipes,
@@ -48,19 +51,24 @@ export default class FlappyBirdScene extends Phaser.Scene {
       loop: true,
     });
 
-    // Collision detection
     this.physics.add.collider(this.bird, this.pipes, this.handleCollision, null, this);
 
-    // Score tracking
+    // Initialize Score
     this.score = 0;
+    this.setScore(0); // Reset score in React component
     this.scoreText = this.add.text(10, 10, `Score: ${this.score}`, {
       fontSize: "16px",
       fill: "#fff",
     });
+
+    this.hitSound = this.sound.add("hit");
+    this.pointSound = this.sound.add("point");
+    this.wingSound = this.sound.add("wing");
   }
 
   flap() {
     this.bird.setVelocityY(-250);
+    this.wingSound.play();
   }
 
   addPipes() {
@@ -70,7 +78,6 @@ export default class FlappyBirdScene extends Phaser.Scene {
     const maxY = 350;
     const pipeY = Phaser.Math.Between(minY, maxY);
 
-    // Top Pipe
     const topPipe = this.pipes.create(pipeX, pipeY - pipeGap / 2, "pipeTop");
     topPipe.setOrigin(0.5, 1);
     topPipe.setVelocityX(-100);
@@ -78,7 +85,6 @@ export default class FlappyBirdScene extends Phaser.Scene {
     topPipe.body.setImmovable(true);
     topPipe.scored = false;
 
-    // Bottom Pipe
     const bottomPipe = this.pipes.create(pipeX, pipeY + pipeGap / 2, "pipeBottom");
     bottomPipe.setOrigin(0.5, 0);
     bottomPipe.setVelocityX(-100);
@@ -93,10 +99,8 @@ export default class FlappyBirdScene extends Phaser.Scene {
     }
     this.updateScore();
 
-    // Scroll foreground to match pipes' speed
     this.foreground.tilePositionX += 1;
 
-    // Remove pipes that move off-screen
     this.pipes.children.iterate((pipe) => {
       if (pipe && pipe.x < -50) {
         pipe.destroy();
@@ -110,13 +114,17 @@ export default class FlappyBirdScene extends Phaser.Scene {
         this.score += 1;
         pipe.scored = true;
         this.scoreText.setText(`Score: ${this.score}`);
+        this.setScore(this.score); // Sync score with React state
+        this.pointSound.play();
       }
     });
   }
 
   handleCollision() {
-    console.log("💀 Collision detected! Restarting...");
-    this.scene.restart();
+    this.hitSound.play();
+    this.setScore(this.score); // Store final score
+    this.setGameOver(true); // Trigger game-over state in React
+    this.scene.pause();
   }
 
   toggleDayNight() {
